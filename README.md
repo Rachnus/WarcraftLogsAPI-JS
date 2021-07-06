@@ -1,2 +1,4 @@
-# WarcraftLogsAPI-JS
-Wrapper for WCRAFTLOGS API
+Dependencies:
+
+- npm install client-oauth2
+- npm install axios
