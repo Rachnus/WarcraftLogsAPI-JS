@@ -186,6 +186,19 @@ function GetParses(parseQueries, forceUpdate = false)
 }
 
 /**
+ * Get all parses of a boss by player/realm/region/encounter id (Cached)
+ * 
+ * NOTE: GetCachedX functions are unreliable and should only be used when caching was guaranteed previously
+ * 
+ * @param parseQuery    - QueryParse
+ * @returns             - WCLOGSEncounterRankingResult
+ */
+ function GetCachedParses(parseQuery)
+ {
+     return Cache.DynamicCache.GetEncounterRankings(parseQuery.m_szName, parseQuery.m_szServer, parseQuery.m_szRegion, parseQuerym_iEncounterID, parseQuery.m_RankingOptions).m_Data;
+ }
+
+/**
  * Get players rankings of every encounter, including different specs, also gets overall, region and server ranking
  * 
  * @param allstarQueries - Array of QueryAllstar
@@ -331,11 +344,25 @@ function GetAllstars(allstarQueries, forceUpdate = false)
     return promise;
 }
 
+/**
+ * Get players rankings of every encounter, including different specs, also gets overall, region and server ranking
+ * 
+ * NOTE: GetCachedX functions are unreliable and should only be used when caching was guaranteed previously
+ * 
+ * @param allstarQuery  - QueryAllstar
+ * @returns             - WCLOGSZoneRankingResult
+ */
+ function GetCachedAllstars(allstarQuery)
+ {
+     return Cache.DynamicCache.GetZoneRankings(allstarQuery.m_szName, allstarQuery.m_szServer, allstarQuery.m_szRegion, allstarQuery.m_RankingOptions).m_Data;
+ }
 
 module.exports =
 {
     GetParses,
+    GetCachedParses,
     GetAllstars,
+    GetCachedAllstars,
 
     QueryParse,
     QueryAllstar,

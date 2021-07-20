@@ -257,9 +257,9 @@ class WCLOGSRankingOptions
                 includeCombatantInfo = false,
                 includePrivateLogs = false,
                 metric = WCLOGSCharacterRankingMetricType.Default,
-                partition = 1,
+                partition = 0,                                   // looks like it means expansion kind of, 0 works for classic parses, 1 works for tbc, if the value is 0 or lower, it works for all
                 role = WCLOGSRankingRoleType.Any,
-                size = 0,                                          // 0 to get default or any, not sure, but works
+                size = 0,                                        // 0 to get default or any, not sure, but works
                 specName = "",                                   // leave empty or type invalid spec to get all specs
                 timeframe = WCLOGSRankingTimeframeType.Historical)
     {

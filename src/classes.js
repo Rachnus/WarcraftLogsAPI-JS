@@ -82,7 +82,14 @@ function LoadClassData()
     return promise;
 }
 
+function GetClass(cls)
+{
+    return Cache.StaticCache.GetClass(cls);
+}
+
 module.exports =
 {
     LoadClassData,
+
+    GetClass,
 };

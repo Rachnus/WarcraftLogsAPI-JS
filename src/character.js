@@ -140,9 +140,23 @@ function GetCharacter(playerQueries, forceUpdate = false)
     return promise;
 }
 
+/**
+ * Get all character info (Cached)
+ * 
+ * NOTE: GetCachedX functions are unreliable and should only be used when caching was guaranteed previously
+ * 
+ * @param playerQuery   - QueryCharacter
+ * @returns             - WCLOGSCharacter
+ */
+ function GetCachedCharacter(playerQuery)
+ {
+     return Cache.DynamicCache.GetCharacter(playerQuery.m_szName, playerQuery.m_szServer, playerQuery.m_szRegion).m_Data;
+ }
+
 module.exports =
 {
     GetCharacter,
+    GetCachedCharacter,
 
     QueryCharacter,
 }
