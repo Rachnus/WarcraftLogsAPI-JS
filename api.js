@@ -6,6 +6,7 @@ var Settings = require('./src/settings.js');
 
 var Rankings = require('./src/rankings');
 var Classes = require('./src/classes');
+var Character = require('./src/character');
 
 /**
  * Call this before making any API calls
@@ -27,7 +28,7 @@ function InitAPI(oath2)
                 g_Initialized = true;
 
                 // Load classes
-                Classes.LoadClassData().then((result) => {
+                Classes.LoadClassData().then(() => {
                     console.log(`${Settings} Warcraftlogs class data loaded`);
                 })
             }
@@ -49,4 +50,5 @@ module.exports =
     Rankings,
     Types,
     Classes,
+    Character,
 };
