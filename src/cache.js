@@ -1,6 +1,7 @@
 var crypto = require('crypto');
 
 var Settings = require('./settings');
+var Types = require('./types');
 
 class DynamicCacheEntry
 {
@@ -11,6 +12,7 @@ class DynamicCacheEntry
         this.m_iUpdateInterval = -1;
         this.m_iQueryHash      = null;
         this.m_Character       = null;
+        this.m_bExists         = null;
     }
 
     NeedsUpdate()
@@ -28,62 +30,76 @@ class DynamicCache
     }
 
     // key: NameRealmRegion (NotbaldFiremawEU)
-    static CacheCharacter(character, query)
+    static CacheCharacter(character, query, rawQuery)
     {
         var cacheEntry = new DynamicCacheEntry();
+
         cacheEntry.m_Data = character;
         cacheEntry.m_iLastUpdated = Math.floor(Date.now() / 1000);
-        cacheEntry.m_iQueryHash = crypto.createHash('md5').update(query).digest('hex');
+        cacheEntry.m_iQueryHash = crypto.createHash('sha1').update(rawQuery).digest('base64');
         cacheEntry.m_Character = character;
-        cacheEntry.m_iUpdateInterval = Settings.CACHE_UPDATE_INTERVALS.CHARACTER;
+        cacheEntry.m_iUpdateInterval = character==null?Settings.CACHE_UPDATE_INTERVALS.NULL_VALUES:Settings.CACHE_UPDATE_INTERVALS.CHARACTER;
+        cacheEntry.m_bExists = character!=null;
 
-        var cacheKey = `${character.m_szName}${character.m_Server.m_szName}${character.m_Server.m_Region.m_szCompactName}`;
+        var cacheKey = `${query.m_szName}${query.m_szServer}${query.m_szRegion}`;
 
         DynamicCache.s_CharacterCache.set(cacheKey, cacheEntry);
-        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, query);
+        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, rawQuery);
     }
 
-    // key: NameRealmRegionEncounterID (NotbaldFiremawEU613)
-    static CacheEncounterRanking(encounterRanking, encounterId, character, query)
+    // key: NameRealmRegionEncounterID<Options> (NotbaldFiremawEU613)
+    static CacheEncounterRanking(encounterRanking, character, query, rawQuery)
     {
         var cacheEntry = new DynamicCacheEntry();
         cacheEntry.m_Data = encounterRanking;
         cacheEntry.m_iLastUpdated = Math.floor(Date.now() / 1000);
-        cacheEntry.m_iQueryHash = crypto.createHash('md5').update(query).digest('hex');
+        cacheEntry.m_iQueryHash = crypto.createHash('sha1').update(rawQuery).digest('base64');
         cacheEntry.m_Character = character;
-        cacheEntry.m_iUpdateInterval = Settings.CACHE_UPDATE_INTERVALS.ENCOUNTER_RANKINGS;
+        cacheEntry.m_iUpdateInterval = encounterRanking==null?Settings.CACHE_UPDATE_INTERVALS.NULL_VALUES:Settings.CACHE_UPDATE_INTERVALS.ENCOUNTER_RANKINGS;
+        cacheEntry.m_bExists = encounterRanking!=null;
 
-        var cacheKey = `${character.m_szName}${character.m_Server.m_szName}${character.m_Server.m_Region.m_szCompactName}${encounterId}`;
+        var opt = JSON.stringify(query.m_RankingOptions);
+        var cacheKey = `${query.m_szName}${query.m_szServer}${query.m_szRegion}${query.m_iEncounterID}${opt}`;
+        cacheKey = crypto.createHash('sha1').update(cacheKey).digest('base64');
 
         DynamicCache.s_EncounterRankings.set(cacheKey, cacheEntry);
-        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, query);
+        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, rawQuery);
     }
 
     // key: NameRealmRegionEncounterID (NotbaldFiremawEU)
-    static CacheZoneRanking(zoneRanking, character, query)
+    static CacheZoneRanking(zoneRanking, character, query, rawQuery)
     {
         var cacheEntry = new DynamicCacheEntry();
         cacheEntry.m_Data = zoneRanking;
         cacheEntry.m_iLastUpdated = Math.floor(Date.now() / 1000);
-        cacheEntry.m_iQueryHash = crypto.createHash('md5').update(query).digest('hex');
+        cacheEntry.m_iQueryHash = crypto.createHash('sha1').update(rawQuery).digest('base64');
         cacheEntry.m_Character = character;
-        cacheEntry.m_iUpdateInterval = Settings.CACHE_UPDATE_INTERVALS.ZONE_RANKINGS;
-        
-        var cacheKey = `${character.m_szName}${character.m_Server.m_szName}${character.m_Server.m_Region.m_szCompactName}`;
-        
+        cacheEntry.m_iUpdateInterval = zoneRanking==null?Settings.CACHE_UPDATE_INTERVALS.NULL_VALUES:Settings.CACHE_UPDATE_INTERVALS.ZONE_RANKINGS;
+        cacheEntry.m_bExists = zoneRanking!=null;
+
+        var opt = JSON.stringify(query.m_RankingOptions);
+        var cacheKey = `${query.m_szName}${query.m_szServer}${query.m_szRegion}${opt}`;
+        cacheKey = crypto.createHash('sha1').update(cacheKey).digest('base64');
+
         DynamicCache.s_ZoneRankings.set(cacheKey, cacheEntry);
-        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, query);
+        DynamicCache.s_QueryCache.set(cacheEntry.m_iQueryHash, rawQuery);
     }
 
-    static GetZoneRankings(name, server, region)
+    static GetZoneRankings(name, server, region, options = new Types.WCLOGSRankingOptions())
     {
-        var cacheKey = `${name}${server}${region}`;
+        var opt = JSON.stringify(options);
+        var cacheKey = `${name}${server}${region}${opt}`;
+        cacheKey = crypto.createHash('sha1').update(cacheKey).digest('base64');
+
         return DynamicCache.s_ZoneRankings.get(cacheKey);
     }
 
-    static GetEncounterRankings(name, server, region, encounterId)
+    static GetEncounterRankings(name, server, region, encounterId, options = new Types.WCLOGSRankingOptions())
     {
-        var cacheKey = `${name}${server}${region}${encounterId}`;
+        var opt = JSON.stringify(options);
+        var cacheKey = `${name}${server}${region}${encounterId}${opt}`;
+        cacheKey = crypto.createHash('sha1').update(cacheKey).digest('base64');
+
         return DynamicCache.s_EncounterRankings.get(cacheKey);
     }
 

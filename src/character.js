@@ -4,30 +4,43 @@ var Types = require('./types');
 var Cache = require('./cache');
 
 /**
+ * @param name        - Character ingame name to query
+ * @param server      - Name of the realm (firemaw, gehennas etc...)
+ * @param region      - Region of player (eu, na, etc...)
+ */
+ class QueryCharacter
+ {
+     constructor(name, server, region)
+     {
+         this.m_szName         = name;
+         this.m_szServer       = server;
+         this.m_szRegion       = region;
+     }
+ }
+
+/**
  * Get all character info
  * 
- * @param names       - Array of names to get data for
- * @param server      - Server name
- * @param region      - Region of player (eu, na, etc...)
- * @param forceUpdate - Should the query be forced? Even if the result is cached?
- * @returns           - Promise
+ * @param playerQueries - Array of QueryCharacter
+ * @param forceUpdate   - Should the query be forced? Even if the result is cached?
+ * @returns             - Promise
  */
-function GetCharacter(names, server, region, forceUpdate = false)
+function GetCharacter(playerQueries, forceUpdate = false)
 {
-    var newNames = names.slice();
+    var queryCount = playerQueries.length;
     // check cache
     var existingCharacters = [];
     if(!forceUpdate)
     {
-        for(var i = 0; i < names.length; i++)
+        for(var i = playerQueries.length-1; i >= 0; --i)
         {
-            var char = Cache.DynamicCache.GetCharacter(names[i]);
+            var char = Cache.DynamicCache.GetCharacter(playerQueries[i].m_szName, playerQueries[i].m_szServer, playerQueries[i].m_szRegion);
             if(char != null)
             {
                 // remove existing characters from the list of names, to grab minimal info
                 if(!char.NeedsUpdate())
                 {
-                    newNames.splice(newNames.indexOf(names[i]), 1);
+                    playerQueries.splice(i, 1);
                     existingCharacters.push(char.m_Data);
                 }
             }
@@ -38,19 +51,17 @@ function GetCharacter(names, server, region, forceUpdate = false)
     var promise = new Promise((resolve, reject) =>
     {
         // if all characters are already cached
-        if(existingCharacters.length >= names.length)
+        if(existingCharacters.length >= queryCount)
         {
             resolve(existingCharacters);
             return promise;
         }
 
-        console.log(`exist: ${existingCharacters.length}`);
-
         var body = `{characterData{`
 
-        for(var i = 0; i < newNames.length; i++)
+        for(var i = 0; i < playerQueries.length; i++)
         {
-            body += `C${i}:character(name: "${newNames[i]}", serverSlug: "${server}", serverRegion: "${region}")
+            body += `C${i}:character(name: "${playerQueries[i].m_szName}", serverSlug: "${playerQueries[i].m_szServer}", serverRegion: "${playerQueries[i].m_szRegion}")
                     {
                         classID
                         canonicalID
@@ -114,14 +125,12 @@ function GetCharacter(names, server, region, forceUpdate = false)
 
             // copy the existing elements to the results
             var characterList = existingCharacters.slice();
-            for(var i = 0; i < newNames.length; i++)
+            for(var i = 0; i < playerQueries.length; i++)
             {
+                // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
-                if(charData == null)
-                    continue;
-                
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
-                Cache.DynamicCache.CacheCharacter(character, body);
+                Cache.DynamicCache.CacheCharacter(character, playerQueries[i], body);
                 characterList.push(character);
             }
             resolve(characterList);
@@ -134,4 +143,6 @@ function GetCharacter(names, server, region, forceUpdate = false)
 module.exports =
 {
     GetCharacter,
+
+    QueryCharacter,
 }

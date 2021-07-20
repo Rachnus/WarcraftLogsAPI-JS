@@ -4,34 +4,67 @@ var Types = require('./types');
 var Cache = require('./cache');
 
 /**
- * Get all parses of a boss by player/realm/region/encounter id
- * 
- * @param names       - Array of names to get parses for
- * @param server      - Server name
+ * @param name        - Character ingame name to query
+ * @param server      - Name of the realm (firemaw, gehennas etc...)
  * @param region      - Region of player (eu, na, etc...)
  * @param encounterId - ID of encounter // https://wowpedia.fandom.com/wiki/DungeonEncounterID
- * @param forceUpdate - Should the query be forced? Even if the result is cached?
  * @param options     - options of the search (WCLOGSRankingOptions)
- * @returns           - Promise
  */
-function GetParses(names, server, region, encounterId, forceUpdate = false, options = null)
+class QueryParse
 {
-    var newNames = names.slice();
+    constructor(name, server, region, encounterId, options = new Types.WCLOGSRankingOptions())
+    {
+        this.m_szName         = name;
+        this.m_szServer       = server;
+        this.m_szRegion       = region;
+        this.m_iEncounterID   = encounterId;
+        this.m_RankingOptions = options;
+    }
+}
+
+/**
+ * @param name        - Character ingame name to query
+ * @param server      - Name of the realm (firemaw, gehennas etc...)
+ * @param region      - Region of player (eu, na, etc...)
+ * @param options     - options of the search (WCLOGSRankingOptions)
+ */
+class QueryAllstar
+{
+    constructor(name, server, region, options = new Types.WCLOGSRankingOptions())
+    {
+        this.m_szName         = name;
+        this.m_szServer       = server;
+        this.m_szRegion       = region;
+        this.m_RankingOptions = options;
+    }
+}
+
+/**
+ * Get all parses of a boss by player/realm/region/encounter id
+ * 
+ * @param parseQueries - Array of QueryParse
+ * @param forceUpdate  - Should the query be forced? Even if the result is cached?
+ * @returns            - Promise
+ */
+function GetParses(parseQueries, forceUpdate = false)
+{
+    var queryCount = parseQueries.length;
+
     // check cache
     var existingRankings = [];
 
     if(!forceUpdate)
     {
-        for(var i = 0; i < names.length; i++)
+        for(var i = parseQueries.length-1; i >= 0; --i)
         {
-            var ranking = Cache.DynamicCache.GetEncounterRankings(names[i], server, region, encounterId);
+            var ranking = Cache.DynamicCache.GetEncounterRankings(parseQueries[i].m_szName, parseQueries[i].m_szServer, parseQueries[i].m_szRegion, parseQueries[i].m_iEncounterID, parseQueries[i].m_RankingOptions);
             if(ranking != null)
             {
                 // remove existing characters from the list of names, to grab minimal info
                 if(!ranking.NeedsUpdate())
                 {
-                    newNames.splice(newNames.indexOf(names[i]), 1);
-                    existingRankings.push(ranking);
+                    parseQueries.splice(i, 1);
+                    existingRankings.push(ranking.m_Data);
                 }
             }
         }
@@ -39,40 +72,36 @@ function GetParses(names, server, region, encounterId, forceUpdate = false, opti
 
     var promise = new Promise((resolve, reject) =>
     {
-        for(var i = 0; i < names.length; i++)
+        if(existingRankings.length >= queryCount)
         {
-            // if all characters are already cached
-            if(existingRankings.length >= names.length)
-            {
-                resolve(existingRankings);
-                return promise;
-            }
+            resolve(existingRankings);
+            return promise;
         }
-
-        var encRankStr = `encounterRankings(encounterID: ${encounterId}`;
-
-        if(options != null)
-        {
-            if(options.m_bByBracket != null)            encRankStr+= ', byBracket:'            +options.m_bByBracket;
-            if(options.m_Compare != null)               encRankStr+= ', compare:'              +options.m_Compare;
-            if(options.m_iDifficulty != null)           encRankStr+= ', difficulty:'           +options.m_iDifficulty;
-            if(options.m_bIncludeCombatantInfo != null) encRankStr+= ', includeCombatantInfo:' +options.m_bIncludeCombatantInfo;
-            if(options.m_bIncludePrivateLogs != null)   encRankStr+= ', includePrivateLogs:'   +options.m_bIncludePrivateLogs;
-            if(options.m_Metric != null)                encRankStr+= ', metric:'               +options.m_Metric;
-            if(options.m_iPartition != null)            encRankStr+= ', partition:'            +options.m_iPartition;
-            if(options.m_Role != null)                  encRankStr+= ', role:'                 +options.m_Role;
-            if(options.m_iSize != null)                 encRankStr+= ', size:'                 +options.m_iSize;
-            if(options.m_szSpecName != null)            encRankStr+= ', specName:'             +options.m_szSpecName;
-            if(options.m_TimeFrame != null)             encRankStr+= ', timeframe:'            +options.m_TimeFrame;
-        }
-
-        encRankStr += `)`;
 
         var body = `{characterData{`
 
-        for(var i = 0; i < names.length; i++)
+        for(var i = 0; i < parseQueries.length; i++)
         {
-            body += `C${i}:character(name: "${names[i]}", serverSlug: "${server}", serverRegion: "${region}")
+            var encRankStr = `encounterRankings(encounterID: ${parseQueries[i].m_iEncounterID}`;
+
+            if(parseQueries[i].m_RankingOptions != null)
+            {
+                if(parseQueries[i].m_RankingOptions.m_bByBracket != null)            encRankStr+= ', byBracket:'            +parseQueries[i].m_RankingOptions.m_bByBracket;
+                if(parseQueries[i].m_RankingOptions.m_Compare != null)               encRankStr+= ', compare:'              +parseQueries[i].m_RankingOptions.m_Compare;
+                if(parseQueries[i].m_RankingOptions.m_iDifficulty != null)           encRankStr+= ', difficulty:'           +parseQueries[i].m_RankingOptions.m_iDifficulty;
+                if(parseQueries[i].m_RankingOptions.m_bIncludeCombatantInfo != null) encRankStr+= ', includeCombatantInfo:' +parseQueries[i].m_RankingOptions.m_bIncludeCombatantInfo;
+                if(parseQueries[i].m_RankingOptions.m_bIncludePrivateLogs != null)   encRankStr+= ', includePrivateLogs:'   +parseQueries[i].m_RankingOptions.m_bIncludePrivateLogs;
+                if(parseQueries[i].m_RankingOptions.m_Metric != null)                encRankStr+= ', metric:'               +parseQueries[i].m_RankingOptions.m_Metric;
+                if(parseQueries[i].m_RankingOptions.m_iPartition != null)            encRankStr+= ', partition:'            +parseQueries[i].m_RankingOptions.m_iPartition;
+                if(parseQueries[i].m_RankingOptions.m_Role != null)                  encRankStr+= ', role:'                 +parseQueries[i].m_RankingOptions.m_Role;
+                if(parseQueries[i].m_RankingOptions.m_iSize != null)                 encRankStr+= ', size:'                 +parseQueries[i].m_RankingOptions.m_iSize;
+                if(parseQueries[i].m_RankingOptions.m_szSpecName != null)            encRankStr+= ', specName:"'            +parseQueries[i].m_RankingOptions.m_szSpecName+'"';
+                if(parseQueries[i].m_RankingOptions.m_TimeFrame != null)             encRankStr+= ', timeframe:'            +parseQueries[i].m_RankingOptions.m_TimeFrame;
+            }
+
+            encRankStr += `)`;
+
+            body += `C${i}:character(name: "${parseQueries[i].m_szName}", serverSlug: "${parseQueries[i].m_szServer}", serverRegion: "${parseQueries[i].m_szRegion}")
                     {
                         ${encRankStr}
                         classID
@@ -136,17 +165,15 @@ function GetParses(names, server, region, encounterId, forceUpdate = false, opti
             }
 
             var encounterRankingsList = existingRankings.slice();
-            for(var i = 0; i < names.length; i++)
+            for(var i = 0; i < parseQueries.length; i++)
             {
+                // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
-                if(charData == null)
-                    continue;
-
-                var encounterRankings = Types.WCLOGSEncounterRankingResult.FromJSON(charData.encounterRankings);
+                var encounterRankings = charData==null?null:Types.WCLOGSEncounterRankingResult.FromJSON(charData.encounterRankings);
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
 
-                Cache.DynamicCache.CacheEncounterRanking(encounterRankings, encounterId, character, body);
-                Cache.DynamicCache.CacheCharacter(character, body);
+                Cache.DynamicCache.CacheEncounterRanking(encounterRankings, character, parseQueries[i], body);
+                Cache.DynamicCache.CacheCharacter(character, parseQueries[i], body);
 
                 encounterRankingsList.push(encounterRankings);
 
@@ -161,31 +188,28 @@ function GetParses(names, server, region, encounterId, forceUpdate = false, opti
 /**
  * Get players rankings of every encounter, including different specs, also gets overall, region and server ranking
  * 
- * @param names       - Array of names to get allstars for
- * @param server      - Server name
- * @param region      - Region of player (eu, na, etc...)
- * @param options     - options of the search (WCLOGSRankingOptions)
- * @param forceUpdate - Should the query be forced? Even if the result is cached?
- * @returns           - Promise
+ * @param allstarQueries - Array of QueryAllstar
+ * @param forceUpdate    - Should the query be forced? Even if the result is cached?
+ * @returns              - Promise
  */
-function GetAllstars(names, server, region, forceUpdate = false, options = null)
+function GetAllstars(allstarQueries, forceUpdate = false)
 {
-    var newNames = names.slice();
+    var queryCount = allstarQueries.length;
     // check cache
     var existingRankings = [];
 
     if(!forceUpdate)
     {
-        for(var i = 0; i < names.length; i++)
+        for(var i = allstarQueries.length-1; i >= 0; --i)
         {
-            var ranking = Cache.DynamicCache.GetZoneRankings(names[i], server, region);
+            var ranking = Cache.DynamicCache.GetZoneRankings(allstarQueries[i].m_szName, allstarQueries[i].m_szServer, allstarQueries[i].m_szRegion, allstarQueries[i].m_RankingOptions);
             if(ranking != null)
             {
                 // remove existing characters from the list of names, to grab minimal info
                 if(!ranking.NeedsUpdate())
                 {
-                    newNames.splice(newNames.indexOf(names[i]), 1);
-                    existingRankings.push(ranking);
+                    allstarQueries.splice(i, 1);
+                    existingRankings.push(ranking.m_Data);  
                 }
             }
         }
@@ -193,42 +217,38 @@ function GetAllstars(names, server, region, forceUpdate = false, options = null)
 
     var promise = new Promise((resolve, reject) =>
     {
-        for(var i = 0; i < names.length; i++)
+        if(existingRankings.length >= queryCount)
         {
-            // if all characters are already cached
-            if(existingRankings.length >= names.length)
-            {
-                resolve(existingRankings);
-                return promise;
-            }
+            resolve(existingRankings);
+            return promise;
         }
-
-        var zoneRankStr = `zoneRankings`;
-        var args = "";
-
-        if(options != null)
-        {
-            if(options.m_bByBracket != null)            args+= 'byBracket:'            +options.m_bByBracket+', ';
-            if(options.m_Compare != null)               args+= 'compare:'              +options.m_Compare+', ';
-            if(options.m_iDifficulty != null)           args+= 'difficulty:'           +options.m_iDifficulty+', ';
-            if(options.m_bIncludePrivateLogs != null)   args+= 'includePrivateLogs:'   +options.m_bIncludePrivateLogs+', ';
-            if(options.m_Metric != null)                args+= 'metric:'               +options.m_Metric+', ';
-            if(options.m_iPartition != null)            args+= 'partition:'            +options.m_iPartition+', ';
-            if(options.m_Role != null)                  args+= 'role:'                 +options.m_Role+', ';
-            if(options.m_iSize != null)                 args+= 'size:'                 +options.m_iSize+', ';
-            if(options.m_szSpecName != null)            args+= 'specName:'             +options.m_szSpecName+', ';
-            if(options.m_TimeFrame != null)             args+= 'timeframe:'            +options.m_TimeFrame+', ';
-            if(options.m_iZoneID != null)               args+= 'zoneID:'               +options.m_iZoneID+', ';
-        }
-
-        if(args.length > 0)
-            zoneRankStr += `(${args})`;
 
         var body = `{characterData{`
 
-        for(var i = 0; i < names.length; i++)
+        for(var i = 0; i < allstarQueries.length; i++)
         {
-            body += `C${i}:character(name: "${names[i]}", serverSlug: "${server}", serverRegion: "${region}")
+            var zoneRankStr = `zoneRankings`;
+            var args = "";
+
+            if(allstarQueries[i].m_RankingOptions != null)
+            {
+                if(allstarQueries[i].m_RankingOptions.m_bByBracket != null)            args+= 'byBracket:'            +allstarQueries[i].m_RankingOptions.m_bByBracket+', ';
+                if(allstarQueries[i].m_RankingOptions.m_Compare != null)               args+= 'compare:'              +allstarQueries[i].m_RankingOptions.m_Compare+', ';
+                if(allstarQueries[i].m_RankingOptions.m_iDifficulty != null)           args+= 'difficulty:'           +allstarQueries[i].m_RankingOptions.m_iDifficulty+', ';
+                if(allstarQueries[i].m_RankingOptions.m_bIncludePrivateLogs != null)   args+= 'includePrivateLogs:'   +allstarQueries[i].m_RankingOptions.m_bIncludePrivateLogs+', ';
+                if(allstarQueries[i].m_RankingOptions.m_Metric != null)                args+= 'metric:'               +allstarQueries[i].m_RankingOptions.m_Metric+', ';
+                if(allstarQueries[i].m_RankingOptions.m_iPartition != null)            args+= 'partition:'            +allstarQueries[i].m_RankingOptions.m_iPartition+', ';
+                if(allstarQueries[i].m_RankingOptions.m_Role != null)                  args+= 'role:'                 +allstarQueries[i].m_RankingOptions.m_Role+', ';
+                if(allstarQueries[i].m_RankingOptions.m_iSize != null)                 args+= 'size:'                 +allstarQueries[i].m_RankingOptions.m_iSize+', ';
+                if(allstarQueries[i].m_RankingOptions.m_szSpecName != null)            args+= 'specName:"'            +allstarQueries[i].m_RankingOptions.m_szSpecName+'", ';
+                if(allstarQueries[i].m_RankingOptions.m_TimeFrame != null)             args+= 'timeframe:'            +allstarQueries[i].m_RankingOptions.m_TimeFrame+', ';
+                if(allstarQueries[i].m_RankingOptions.m_iZoneID != null)               args+= 'zoneID:'               +allstarQueries[i].m_RankingOptions.m_iZoneID+', ';
+            }
+
+            if(args.length > 0)
+                zoneRankStr += `(${args})`;
+
+            body += `C${i}:character(name: "${allstarQueries[i].m_szName}", serverSlug: "${allstarQueries[i].m_szServer}", serverRegion: "${allstarQueries[i].m_szRegion}")
                     {
                         ${zoneRankStr}
                         classID
@@ -291,17 +311,15 @@ function GetAllstars(names, server, region, forceUpdate = false, options = null)
             }
 
             var zoneRankingsList = existingRankings.slice();
-            for(var i = 0; i < names.length; i++)
+            for(var i = 0; i < allstarQueries.length; i++)
             {
+                // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
-                if(charData == null)
-                    continue;
-
-                var zoneRankings = Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
+                var zoneRankings = charData==null?null:Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
 
-                Cache.DynamicCache.CacheZoneRanking(zoneRankings, character, body);
-                Cache.DynamicCache.CacheCharacter(character, body);
+                Cache.DynamicCache.CacheZoneRanking(zoneRankings, character, allstarQueries[i], body);
+                Cache.DynamicCache.CacheCharacter(character, allstarQueries[i], body);
 
                 zoneRankingsList.push(zoneRankings);
 
@@ -318,4 +336,7 @@ module.exports =
 {
     GetParses,
     GetAllstars,
+
+    QueryParse,
+    QueryAllstar,
 };

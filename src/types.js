@@ -41,6 +41,15 @@ const WCLOGSRankingTimeframeType =
     Historical: 'Historical',
 }
 
+// https://classic.warcraftlogs.com/v2-api-docs/warcraft/roletype.doc.html
+const WCLOGSRankingRoleType = 
+{
+    Any:    'Any',
+    DPS:    'DPS',
+    Healer: 'Healer',
+    Tank:   'Tank',
+}
+
 class WCLOGSEncounter
 {
     constructor()
@@ -240,33 +249,33 @@ class WCLOGSGuild
  * @param zoneID               - (zoneRaknings only) If not specified, the latest unfrozen zone
  *                               will be used.
  */
- class WCLOGSRankingOptions
- {
-     constructor(byBracket = true,
-                 compare = null,
-                 difficulty = null,
-                 includeCombatantInfo = null,
-                 includePrivateLogs = null,
-                 metric = null,
-                 partition = null,
-                 role = null,
-                 size = null,
-                 specName = null,
-                 timeframe = null)
-     {
-         this.m_bByBracket = byBracket;
-         this.m_Compare = compare;
-         this.m_iDifficulty = difficulty;
-         this.m_bIncludeCombatantInfo = includeCombatantInfo;
-         this.m_bIncludePrivateLogs = includePrivateLogs;
-         this.m_Metric = metric;
-         this.m_iPartition = partition;
-         this.m_Role = role;
-         this.m_iSize = size;
-         this.m_szSpecName = specName;
-         this.m_TimeFrame = timeframe;
-     }
- }
+class WCLOGSRankingOptions
+{
+    constructor(byBracket = false,
+                compare = WCLOGSRankingCompareType.Rankings,
+                difficulty = 3,
+                includeCombatantInfo = false,
+                includePrivateLogs = false,
+                metric = WCLOGSCharacterRankingMetricType.Default,
+                partition = 1,
+                role = WCLOGSRankingRoleType.Any,
+                size = 0,                                          // 0 to get default or any, not sure, but works
+                specName = "",                                   // leave empty or type invalid spec to get all specs
+                timeframe = WCLOGSRankingTimeframeType.Historical)
+    {
+        this.m_bByBracket = byBracket;
+        this.m_Compare = compare;
+        this.m_iDifficulty = difficulty;
+        this.m_bIncludeCombatantInfo = includeCombatantInfo;
+        this.m_bIncludePrivateLogs = includePrivateLogs;
+        this.m_Metric = metric;
+        this.m_iPartition = partition;
+        this.m_Role = role;
+        this.m_iSize = size;
+        this.m_szSpecName = specName;
+        this.m_TimeFrame = timeframe;
+    }
+}
  
  class WCLOGSEncounterRankingResult
  {
@@ -595,6 +604,7 @@ module.exports =
     WCLOGSRankingCompareType,
     WCLOGSCharacterRankingMetricType,
     WCLOGSRankingTimeframeType,
+    WCLOGSRankingRoleType,
 
     WCLOGSRankingOptions,
 

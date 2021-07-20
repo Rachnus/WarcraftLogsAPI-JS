@@ -9,7 +9,9 @@ const CACHE_UPDATE_INTERVALS =
 {
     CHARACTER:          21600,  // (21600) every 6 hours by default, only thing that changes for characters really is level
     ENCOUNTER_RANKINGS: 3600,   // (3600) every hour by default, these calls automatically updates character aswell
-    ZONE_RANKINGS:      3600    // (3600) every hour by default, these calls automatically updates character aswell
+    ZONE_RANKINGS:      3600,   // (3600) every hour by default, these calls automatically updates character aswell
+
+    NULL_VALUES:        3600    // (3600) every hour by default, invalid queries, a name that doesnt exist for example
 }
 
 module.exports =
