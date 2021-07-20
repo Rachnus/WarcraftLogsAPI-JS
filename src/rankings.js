@@ -10,24 +10,29 @@ var Cache = require('./cache');
  * @param server      - Server name
  * @param region      - Region of player (eu, na, etc...)
  * @param encounterId - ID of encounter // https://wowpedia.fandom.com/wiki/DungeonEncounterID
+ * @param forceUpdate - Should the query be forced? Even if the result is cached?
  * @param options     - options of the search (WCLOGSRankingOptions)
  * @returns           - Promise
  */
-function GetParses(names, server, region, encounterId, options = null)
+function GetParses(names, server, region, encounterId, forceUpdate = false, options = null)
 {
     var newNames = names.slice();
     // check cache
     var existingRankings = [];
-    for(var i = 0; i < names.length; i++)
+
+    if(!forceUpdate)
     {
-        var ranking = Cache.DynamicCache.GetEncounterRankings(names[i], server, region, encounterId);
-        if(ranking != null)
+        for(var i = 0; i < names.length; i++)
         {
-            // remove existing characters from the list of names, to grab minimal info
-            if(!ranking.NeedsUpdate())
+            var ranking = Cache.DynamicCache.GetEncounterRankings(names[i], server, region, encounterId);
+            if(ranking != null)
             {
-                newNames.splice(newNames.indexOf(names[i]), 1);
-                existingRankings.push(ranking);
+                // remove existing characters from the list of names, to grab minimal info
+                if(!ranking.NeedsUpdate())
+                {
+                    newNames.splice(newNames.indexOf(names[i]), 1);
+                    existingRankings.push(ranking);
+                }
             }
         }
     }
@@ -160,23 +165,28 @@ function GetParses(names, server, region, encounterId, options = null)
  * @param server      - Server name
  * @param region      - Region of player (eu, na, etc...)
  * @param options     - options of the search (WCLOGSRankingOptions)
+ * @param forceUpdate - Should the query be forced? Even if the result is cached?
  * @returns           - Promise
  */
-function GetAllstars(names, server, region, options = null)
+function GetAllstars(names, server, region, forceUpdate = false, options = null)
 {
     var newNames = names.slice();
     // check cache
     var existingRankings = [];
-    for(var i = 0; i < names.length; i++)
+
+    if(!forceUpdate)
     {
-        var ranking = Cache.DynamicCache.GetZoneRankings(names[i], server, region);
-        if(ranking != null)
+        for(var i = 0; i < names.length; i++)
         {
-            // remove existing characters from the list of names, to grab minimal info
-            if(!ranking.NeedsUpdate())
+            var ranking = Cache.DynamicCache.GetZoneRankings(names[i], server, region);
+            if(ranking != null)
             {
-                newNames.splice(newNames.indexOf(names[i]), 1);
-                existingRankings.push(ranking);
+                // remove existing characters from the list of names, to grab minimal info
+                if(!ranking.NeedsUpdate())
+                {
+                    newNames.splice(newNames.indexOf(names[i]), 1);
+                    existingRankings.push(ranking);
+                }
             }
         }
     }

@@ -9,26 +9,31 @@ var Cache = require('./cache');
  * @param names       - Array of names to get data for
  * @param server      - Server name
  * @param region      - Region of player (eu, na, etc...)
+ * @param forceUpdate - Should the query be forced? Even if the result is cached?
  * @returns           - Promise
  */
-function GetCharacter(names, server, region)
+function GetCharacter(names, server, region, forceUpdate = false)
 {
     var newNames = names.slice();
     // check cache
     var existingCharacters = [];
-    for(var i = 0; i < names.length; i++)
+    if(!forceUpdate)
     {
-        var char = Cache.DynamicCache.GetCharacter(names[i]);
-        if(char != null)
+        for(var i = 0; i < names.length; i++)
         {
-            // remove existing characters from the list of names, to grab minimal info
-            if(!char.NeedsUpdate())
+            var char = Cache.DynamicCache.GetCharacter(names[i]);
+            if(char != null)
             {
-                newNames.splice(newNames.indexOf(names[i]), 1);
-                existingCharacters.push(char.m_Data);
+                // remove existing characters from the list of names, to grab minimal info
+                if(!char.NeedsUpdate())
+                {
+                    newNames.splice(newNames.indexOf(names[i]), 1);
+                    existingCharacters.push(char.m_Data);
+                }
             }
         }
     }
+    
 
     var promise = new Promise((resolve, reject) =>
     {
