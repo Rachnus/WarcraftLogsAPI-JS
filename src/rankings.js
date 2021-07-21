@@ -64,7 +64,7 @@ function GetParses(parseQueries, forceUpdate = false)
                 if(!ranking.NeedsUpdate())
                 {
                     parseQueries.splice(i, 1);
-                    existingRankings.push(ranking.m_Data);
+                    existingRankings.push({index:i, data:ranking.m_Data});  
                 }
             }
         }
@@ -164,9 +164,24 @@ function GetParses(parseQueries, forceUpdate = false)
                 return promise;
             }
 
-            var encounterRankingsList = existingRankings.slice();
+            var encounterRankingsList = [];
             for(var i = 0; i < parseQueries.length; i++)
             {
+                // add the existing rankings in correct query order
+                var con = false;
+                for(var j = 0; j < existingRankings.length; j++)
+                {
+                    if(i == existingRankings[j].index)
+                    {
+                        encounterRankingsList.push(existingRankings[j].data);
+                        con = true;
+                        break;
+                    }
+                }
+
+                if(con)
+                    continue;
+
                 // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
                 var encounterRankings = charData==null?null:Types.WCLOGSEncounterRankingResult.FromJSON(charData.encounterRankings);
@@ -184,6 +199,19 @@ function GetParses(parseQueries, forceUpdate = false)
 
     return promise;
 }
+
+/**
+ * Get all parses of a boss by player/realm/region/encounter id (Cached)
+ * 
+ * NOTE: GetCachedX functions are unreliable and should only be used when caching was guaranteed previously
+ * 
+ * @param parseQuery    - QueryParse
+ * @returns             - WCLOGSEncounterRankingResult
+ */
+ function GetCachedParses(parseQuery)
+ {
+     return Cache.DynamicCache.GetEncounterRankings(parseQuery.m_szName, parseQuery.m_szServer, parseQuery.m_szRegion, parseQuerym_iEncounterID, parseQuery.m_RankingOptions).m_Data;
+ }
 
 /**
  * Get players rankings of every encounter, including different specs, also gets overall, region and server ranking
@@ -209,7 +237,7 @@ function GetAllstars(allstarQueries, forceUpdate = false)
                 if(!ranking.NeedsUpdate())
                 {
                     allstarQueries.splice(i, 1);
-                    existingRankings.push(ranking.m_Data);  
+                    existingRankings.push({index:i, data:ranking.m_Data});  
                 }
             }
         }
@@ -310,12 +338,31 @@ function GetAllstars(allstarQueries, forceUpdate = false)
                 return promise;
             }
 
-            var zoneRankingsList = existingRankings.slice();
+            var zoneRankingsList = [];
             for(var i = 0; i < allstarQueries.length; i++)
             {
+                // add the existing rankings in correct query order
+                var con = false;
+                for(var j = 0; j < existingRankings.length; j++)
+                {
+                    if(i == existingRankings[j].index)
+                    {
+                        zoneRankingsList.push(existingRankings[j].data);
+                        con = true;
+                        break;
+                    }
+                }
+
+                if(con)
+                    continue;
+
                 // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
-                var zoneRankings = charData==null?null:Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
+                var zoneRankings = null;
+  
+                if(charData != null)
+                    zoneRankings = Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
+
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
 
                 Cache.DynamicCache.CacheZoneRanking(zoneRankings, character, allstarQueries[i], body);
@@ -331,11 +378,38 @@ function GetAllstars(allstarQueries, forceUpdate = false)
     return promise;
 }
 
+function GetParsesEntries()
+{
+    return Cache.DynamicCache.s_EncounterRankings.entries();
+}
+
+function GetAllstarEntries()
+{
+    return Cache.DynamicCache.s_ZoneRankings.entries();
+}
+
+/**
+ * Get players rankings of every encounter, including different specs, also gets overall, region and server ranking
+ * 
+ * NOTE: GetCachedX functions are unreliable and should only be used when caching was guaranteed previously
+ * 
+ * @param allstarQuery  - QueryAllstar
+ * @returns             - WCLOGSZoneRankingResult
+ */
+ function GetCachedAllstars(allstarQuery)
+ {
+     return Cache.DynamicCache.GetZoneRankings(allstarQuery.m_szName, allstarQuery.m_szServer, allstarQuery.m_szRegion, allstarQuery.m_RankingOptions).m_Data;
+ }
 
 module.exports =
 {
     GetParses,
+    GetCachedParses,
+    GetParsesEntries,
+
     GetAllstars,
+    GetCachedAllstars,
+    GetAllstarEntries,
 
     QueryParse,
     QueryAllstar,

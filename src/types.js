@@ -50,28 +50,6 @@ const WCLOGSRankingRoleType =
     Tank:   'Tank',
 }
 
-class WCLOGSEncounter
-{
-    constructor()
-    {
-        this.m_iID    = null;
-        this.m_szName = null;
-    }
-
-    static FromJSON(json)
-    {
-        if(json == null)
-            return null;
-
-        var encounter = new WCLOGSEncounter();
-
-        encounter.m_iID          = json["id"];
-        encounter.m_szName       = json["name"];
-
-        return encounter;
-    }
-}
-
 class WCLOGSRegion
 {
     constructor()
@@ -91,7 +69,7 @@ class WCLOGSRegion
 
         var region = new WCLOGSRegion();
 
-        region.m_iID           = json["id"];
+        region.m_iID           = Number(json["id"]);
         region.m_szCompactName = json["compactName"];
         region.m_szName        = json["name"];
         region.m_szSlug        = json["slug"];
@@ -116,7 +94,7 @@ class WCLOGSSubRegion
 
         var subRegion = new WCLOGSSubRegion();
 
-        subRegion.m_iID           = json["id"];
+        subRegion.m_iID           = Number(json["id"]);
         subRegion.m_szName        = json["name"];
 
         subRegion.m_Region        = WCLOGSRegion.FromJSON(json["region"]);
@@ -144,7 +122,7 @@ class WCLOGSServer
 
         var server = new WCLOGSServer();
 
-        server.m_iID              = json["id"];
+        server.m_iID              = Number(json["id"]);
         server.m_szName           = json["name"];
         server.m_szNormalizedName = json["normalizedName"];
         server.m_szSlug           = json["slug"];
@@ -170,7 +148,7 @@ class WCLOGSGameFaction
 
         var faction = new WCLOGSGameFaction();
 
-        faction.m_iID     = json["id"];
+        faction.m_iID     = Number(json["id"]);
         faction.m_szName  = json["name"];
 
         return faction;
@@ -199,7 +177,7 @@ class WCLOGSGuild
             
         var guild = new WCLOGSGuild();
 
-        guild.m_iID              = json["id"];
+        guild.m_iID              = Number(json["id"]);
         guild.m_szName           = json["name"];
         guild.m_Server           = WCLOGSServer.FromJSON(json["server"]);
         guild.m_bStealthMode     = json["stealthMode"];
@@ -257,11 +235,12 @@ class WCLOGSRankingOptions
                 includeCombatantInfo = false,
                 includePrivateLogs = false,
                 metric = WCLOGSCharacterRankingMetricType.Default,
-                partition = 1,
+                partition = 0,                                     // looks like it means expansion kind of, 0 works for classic parses, 1 works for tbc, if the value is 0 or lower, it works for all
                 role = WCLOGSRankingRoleType.Any,
                 size = 0,                                          // 0 to get default or any, not sure, but works
-                specName = "",                                   // leave empty or type invalid spec to get all specs
-                timeframe = WCLOGSRankingTimeframeType.Historical)
+                specName = "",                                     // leave empty or type invalid spec to get all specs
+                timeframe = WCLOGSRankingTimeframeType.Historical,
+                zoneId = 0)                                        // 0 to get default zone id, usually different every phase
     {
         this.m_bByBracket = byBracket;
         this.m_Compare = compare;
@@ -274,6 +253,7 @@ class WCLOGSRankingOptions
         this.m_iSize = size;
         this.m_szSpecName = specName;
         this.m_TimeFrame = timeframe;
+        this.m_iZoneID = zoneId;
     }
 }
  
@@ -305,10 +285,10 @@ class WCLOGSRankingOptions
          result.m_flAveragePerformance  = json["averagePerformance"];
          result.m_iTotalKills           = json["totalKills"];
          result.m_iFastestKill          = json["fastestKill"];
-         result.m_iDifficulty           = json["difficulty"];
+         result.m_iDifficulty           = Number(json["difficulty"]);
          result.m_szMetric              = json["metric"];
-         result.m_iPartition            = json["partition"];
-         result.m_iZone                 = json["zone"];
+         result.m_iPartition            = Number(json["partition"]);
+         result.m_iZone                 = Number(json["zone"]);
  
          var ranks = json["ranks"];
          if(ranks != null)
@@ -326,7 +306,7 @@ class WCLOGSRankingOptions
  {
      constructor()
      {
-         this.m_bLockedIn             = null;
+         this.m_bLockedIn              = null;
          this.m_flRankPercent          = null;
          this.m_flHistoricalPercent    = null;
          this.m_flTodayPercent         = null;
@@ -360,13 +340,13 @@ class WCLOGSRankingOptions
          rank.m_iTodayTotalParses       = json["todayTotalParses"];
          rank.m_Guild                   = WCLOGSGuild.FromJSON(json["guild"])
      //  rank.m_Report                  = json["zone"]; TODO: IMPLEMENT REPORT
-         rank.m_iDuration               = json["duration"];
-         rank.m_iStartTime              = json["startTime"];
+         rank.m_iDuration               = Number(json["duration"]);
+         rank.m_iStartTime              = Number(json["startTime"]);
          rank.m_flAmount                = json["amount"];
          rank.m_iBracketData            = json["bracketData"];
          rank.m_szSpec                  = json["spec"];
          rank.m_szBestSpec              = json["bestSpec"];
-         rank.m_iFaction                = json["faction"];
+         rank.m_iFaction                = Number(json["faction"]);
  
          return rank;
      }
@@ -395,10 +375,10 @@ class WCLOGSRankingOptions
  
          result.m_flBestPerformanceAverage     = json["bestPerformanceAverage"];
          result.m_flMedianPerformanceAverage   = json["medianPerformanceAverage"];
-         result.m_iDifficulty                  = json["difficulty"];
+         result.m_iDifficulty                  = Number(json["difficulty"]);
          result.m_szMetric                     = json["metric"];
-         result.m_iPartition                   = json["partition"];
-         result.m_iZone                        = json["zone"];
+         result.m_iPartition                   = Number(json["partition"]);
+         result.m_iZone                        = Number(json["zone"]);
  
          var allstars = json["allStars"];
          if(allstars != null)
@@ -445,14 +425,14 @@ class WCLOGSRankingOptions
  
          var allstar = new WCLOGSAllstar();
  
-         allstar.m_iPartition      = json["partition"];
+         allstar.m_iPartition      = Number(json["partition"]);
          allstar.m_szSpec          = json["spec"];
          allstar.m_flPoints        = json["points"];
          allstar.m_iPossiblePoints = json["possiblePoints"];
-         allstar.m_iRank           = json["rank"];
-         allstar.m_iRegionRank     = json["regionRank"];
+         allstar.m_iRank           = Number(json["rank"]);
+         allstar.m_iRegionRank     = Number(json["regionRank"]);
          allstar.m_flRankPercent   = json["rankPercent"];
-         allstar.m_iTotal          = json["total"];
+         allstar.m_iTotal          = Number(json["total"]);
  
          return allstar;
      }
@@ -488,8 +468,8 @@ class WCLOGSRankingOptions
          allstar.m_flRankPercent    = json["rankPercent"];
          allstar.m_flMedianPercent  = json["medianPercent"];
          allstar.m_bLockedIn        = json["lockedIn"];
-         allstar.m_iTotalKills      = json["totalKills"];
-         allstar.m_iFastestKill     = json["fastestKill"];
+         allstar.m_iTotalKills      = Number(json["totalKills"]);
+         allstar.m_iFastestKill     = Number(json["fastestKill"]);
          allstar.m_Allstars         = WCLOGSAllstar.FromJSON(json["allStars"]);
          allstar.m_szSpec           = json["spec"];
          allstar.m_szBestSpec       = json["bestSpec"];
@@ -522,13 +502,13 @@ class WCLOGSRankingOptions
 
         var character = new WCLOGSCharacter();
 
-        character.m_iCanonicalID = json["canonicalID"];
-        character.m_iClassID     = json["classID"];
+        character.m_iCanonicalID = Number(json["canonicalID"]);
+        character.m_iClassID     = Number(json["classID"]);
         character.m_Faction      = WCLOGSGameFaction.FromJSON(json["faction"]);
         character.m_iGuildRank   = json["guildRank"];
         character.m_bHidden      = json["hidden"];
-        character.m_iID          = json["id"];
-        character.m_iLevel       = json["level"];
+        character.m_iID          = Number(json["id"]);
+        character.m_iLevel       = Number(json["level"]);
         character.m_szName       = json["name"];
         character.m_Server       = WCLOGSServer.FromJSON(json["server"]);
         //character.m_Guilds     = json["guilds"];
@@ -553,7 +533,7 @@ class WCLOGSSpec
 
         var spec = new WCLOGSSpec();
 
-        spec.m_iID          = json["id"];
+        spec.m_iID          = Number(json["id"]);
         spec.m_szName       = json["name"];
         spec.m_szSlug       = json["slug"];
 
@@ -578,7 +558,7 @@ class WCLOGSClass
 
         var cls = new WCLOGSClass();
 
-        cls.m_iID          = json["id"];
+        cls.m_iID          = Number(json["id"]);
         cls.m_szName       = json["name"];
         cls.m_szSlug       = json["slug"];
 
@@ -595,11 +575,200 @@ class WCLOGSClass
     }
 }
 
+class WCLOGSZone
+{
+    constructor()
+    {
+        this.m_iID          = null;
+        this.m_szName       = null;
+        this.m_bFrozen      = null;
+        this.m_Bracket      = null;
+        this.m_Expansion    = null;
+        this.m_Difficulties = null;
+        this.m_Encounters   = null;
+        this.m_Partitions   = null;
+    }  
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var zone = new WCLOGSZone();
+
+        zone.m_iID          = Number(json["id"]);
+        zone.m_szName       = json["name"];
+        zone.m_bFrozen      = json["frozen"];
+
+        zone.m_Bracket      = WCLOGSBracket.FromJSON(json["brackets"]);
+        zone.m_Expansion    = WCLOGSExpansion.FromJSON(json["expansion"]);
+
+        var difficulties   = json["difficulties"];
+        var encounters     = json["encounters"];
+        var partitions     = json["partitions"];
+
+        if(difficulties != null)
+        {
+            zone.m_Difficulties = [];
+            difficulties.forEach(function(difficulty) {
+                zone.m_Difficulties.push(WCLOGSDifficulty.FromJSON(difficulty));
+            });
+        }
+
+        if(encounters != null)
+        {
+            zone.m_Encounters = [];
+            encounters.forEach(function(encounter) {
+                zone.m_Encounters.push(WCLOGSEncounter.FromJSON(encounter));
+            });
+        }
+
+        if(partitions != null)
+        {
+            zone.m_Partitions = [];
+            partitions.forEach(function(partition) {
+                zone.m_Partitions.push(WCLOGSPartition.FromJSON(partition));
+            });
+        }
+        return zone;
+    }
+}
+
+class WCLOGSBracket
+{
+    constructor()
+    {
+        this.m_flMin     = null;
+        this.m_flMax    = null;
+        this.m_flBucket = null;
+        this.m_szType   = null;
+    }
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var bracket = new WCLOGSBracket();
+
+        bracket.m_flMin    = json["min"];
+        bracket.m_flMax    = json["nax"];
+        bracket.m_flBucket = json["bucket"];
+        bracket.m_szType   = json["type"];
+
+        return bracket;
+    }
+}
+
+class WCLOGSEncounter
+{
+    constructor()
+    {
+        this.m_iID        = null;
+        this.m_szName     = null;
+        this.m_Zone       = null;
+        this.m_iJournalID = null;
+    }
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var encounter = new WCLOGSEncounter();
+
+        encounter.m_iID          = Number(json["id"]);
+        encounter.m_szName       = json["name"];
+        encounter.m_iJournalID   = Number(json["journalID"]);
+
+        return encounter;
+    }
+}
+
+class WCLOGSExpansion
+{
+    constructor()
+    {
+        this.m_iID    = null;
+        this.m_szName = null;
+        this.m_Zones  = null; // TODO fix later
+    }
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var expansion = new WCLOGSExpansion();
+
+        expansion.m_iID    = Number(json["id"]);
+        expansion.m_szName = json["name"];
+
+        return expansion;
+    }
+}
+
+class WCLOGSDifficulty
+{
+    constructor()
+    {
+        this.m_iID    = null;
+        this.m_szName = null;
+        this.m_Sizes  = null;
+    }
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var difficulty = new WCLOGSDifficulty();
+
+        difficulty.m_iID    = Number(json["id"]);
+        difficulty.m_szName = json["name"];
+
+        var sizes           = json["sizes"];
+
+        if(sizes != null)
+        {
+            difficulty.m_Sizes = [];
+            sizes.forEach(function(size) {
+                difficulty.m_Sizes.push(size);
+            });
+        }
+
+        return difficulty;
+    }
+}
+
+class WCLOGSPartition
+{
+    constructor()
+    {
+        this.m_iID           = null;
+        this.m_szName        = null;
+        this.m_szCompactName = null;
+        this.m_bDefault      = null;
+    }
+
+    static FromJSON(json)
+    {
+        if(json == null)
+            return null;
+
+        var partition = new WCLOGSPartition();
+
+        partition.m_iID           = Number(json["id"]);
+        partition.m_szName        = json["name"];
+        partition.m_szCompactName = json["compactName"];
+        partition.m_bDefault      = json["default"];
+
+        return partition;
+    }
+}
+
 module.exports =
 {
-    // --- OTHER ---
-    WCLOGSEncounter,
-
     // --- RANKINGS ---
     WCLOGSRankingCompareType,
     WCLOGSCharacterRankingMetricType,
@@ -628,4 +797,12 @@ module.exports =
     // --- CLASS ---
     WCLOGSSpec,
     WCLOGSClass,
+
+    // --- ZONES ---
+    WCLOGSZone,
+    WCLOGSBracket,
+    WCLOGSDifficulty,
+    WCLOGSEncounter,
+    WCLOGSExpansion,
+    WCLOGSPartition
 };
