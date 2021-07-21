@@ -61,7 +61,7 @@ function LoadClassData()
 
             if(result.data.data.gameData == null || result.data.data.gameData.classes == null)
             {
-                console.log("LoadClassData(): gameData.character was null");
+                console.log("LoadClassData(): gameData.classes was null");
                 resolve(null);
                 return promise;
             }
@@ -87,9 +87,15 @@ function GetClass(cls)
     return Cache.StaticCache.GetClass(cls);
 }
 
+function GetClassEntries()
+{
+    return Cache.StaticCache.s_ClassCache.entries();
+}
+
 module.exports =
 {
     LoadClassData,
 
     GetClass,
+    GetClassEntries,
 };

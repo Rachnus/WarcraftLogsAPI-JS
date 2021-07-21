@@ -64,7 +64,7 @@ function GetParses(parseQueries, forceUpdate = false)
                 if(!ranking.NeedsUpdate())
                 {
                     parseQueries.splice(i, 1);
-                    existingRankings.push(ranking.m_Data);
+                    existingRankings.push({index:i, data:ranking.m_Data});  
                 }
             }
         }
@@ -164,9 +164,24 @@ function GetParses(parseQueries, forceUpdate = false)
                 return promise;
             }
 
-            var encounterRankingsList = existingRankings.slice();
+            var encounterRankingsList = [];
             for(var i = 0; i < parseQueries.length; i++)
             {
+                // add the existing rankings in correct query order
+                var con = false;
+                for(var j = 0; j < existingRankings.length; j++)
+                {
+                    if(i == existingRankings[j].index)
+                    {
+                        encounterRankingsList.push(existingRankings[j].data);
+                        con = true;
+                        break;
+                    }
+                }
+
+                if(con)
+                    continue;
+
                 // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
                 var encounterRankings = charData==null?null:Types.WCLOGSEncounterRankingResult.FromJSON(charData.encounterRankings);
@@ -222,7 +237,7 @@ function GetAllstars(allstarQueries, forceUpdate = false)
                 if(!ranking.NeedsUpdate())
                 {
                     allstarQueries.splice(i, 1);
-                    existingRankings.push(ranking.m_Data);  
+                    existingRankings.push({index:i, data:ranking.m_Data});  
                 }
             }
         }
@@ -323,12 +338,31 @@ function GetAllstars(allstarQueries, forceUpdate = false)
                 return promise;
             }
 
-            var zoneRankingsList = existingRankings.slice();
+            var zoneRankingsList = [];
             for(var i = 0; i < allstarQueries.length; i++)
             {
+                // add the existing rankings in correct query order
+                var con = false;
+                for(var j = 0; j < existingRankings.length; j++)
+                {
+                    if(i == existingRankings[j].index)
+                    {
+                        zoneRankingsList.push(existingRankings[j].data);
+                        con = true;
+                        break;
+                    }
+                }
+
+                if(con)
+                    continue;
+
                 // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
-                var zoneRankings = charData==null?null:Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
+                var zoneRankings = null;
+  
+                if(charData != null)
+                    zoneRankings = Types.WCLOGSZoneRankingResult.FromJSON(charData.zoneRankings);
+
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
 
                 Cache.DynamicCache.CacheZoneRanking(zoneRankings, character, allstarQueries[i], body);
@@ -342,6 +376,16 @@ function GetAllstars(allstarQueries, forceUpdate = false)
     });
 
     return promise;
+}
+
+function GetParsesEntries()
+{
+    return Cache.DynamicCache.s_EncounterRankings.entries();
+}
+
+function GetAllstarEntries()
+{
+    return Cache.DynamicCache.s_ZoneRankings.entries();
 }
 
 /**
@@ -361,8 +405,11 @@ module.exports =
 {
     GetParses,
     GetCachedParses,
+    GetParsesEntries,
+
     GetAllstars,
     GetCachedAllstars,
+    GetAllstarEntries,
 
     QueryParse,
     QueryAllstar,

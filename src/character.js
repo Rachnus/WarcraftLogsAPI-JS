@@ -41,13 +41,12 @@ function GetCharacter(playerQueries, forceUpdate = false)
                 if(!char.NeedsUpdate())
                 {
                     playerQueries.splice(i, 1);
-                    existingCharacters.push(char.m_Data);
+                    existingCharacters.push({index:i, data:char.m_Data});
                 }
             }
         }
     }
     
-
     var promise = new Promise((resolve, reject) =>
     {
         // if all characters are already cached
@@ -124,9 +123,24 @@ function GetCharacter(playerQueries, forceUpdate = false)
             }
 
             // copy the existing elements to the results
-            var characterList = existingCharacters.slice();
+            var characterList = [];
             for(var i = 0; i < playerQueries.length; i++)
             {
+                // add the existing rankings in correct query order
+                var con = false;
+                for(var j = 0; j < existingCharacters.length; j++)
+                {
+                    if(i == existingCharacters[j].index)
+                    {
+                        characterList.push(existingCharacters[j].data);
+                        con = true;
+                        break;
+                    }
+                }
+
+                if(con)
+                    continue;
+
                 // Cache null values aswell, so we dont keep grabbing invalid gibberish
                 var charData = result.data.data.characterData[`C${i}`];
                 var character = Types.WCLOGSCharacter.FromJSON(charData);
@@ -138,6 +152,11 @@ function GetCharacter(playerQueries, forceUpdate = false)
     });
 
     return promise;
+}
+
+function GetCharacterEntries()
+{
+    return Cache.DynamicCache.s_CharacterCache.entries();
 }
 
 /**
@@ -157,6 +176,7 @@ module.exports =
 {
     GetCharacter,
     GetCachedCharacter,
+    GetCharacterEntries,
 
     QueryCharacter,
 }

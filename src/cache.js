@@ -3,6 +3,8 @@ var crypto = require('crypto');
 var Settings = require('./settings');
 var Types = require('./types');
 
+var fs = require('fs');
+
 class DynamicCacheEntry
 {
     constructor()
@@ -122,7 +124,12 @@ class StaticCache
 {
     static CacheClass(cls)
     {
-        StaticCache.s_ClassCache.set(cls.m_szName, cls);
+        StaticCache.s_ClassCache.set(cls.m_szName.toLowerCase(), cls);
+    }
+
+    static CacheZone(zone)
+    {
+        StaticCache.s_ZoneCache.set(zone.m_szName.toLowerCase(), zone);
     }
 
     static GetClass(cls)
@@ -142,7 +149,49 @@ class StaticCache
         return null;
     }
 
+    static GetZone(zone)
+    {
+        if(typeof zone === 'string')
+        {
+            return s_ZoneCache.get(zone.toLowerCase());
+        }
+        else if(typeof zone === 'number')
+        {
+            for (const [key, value] of StaticCache.s_ZoneCache.entries()) {
+                if(value.m_iID == zone)
+                    return value;
+            }
+        }
+
+        return null;
+    }
+
+    static FindZone(zone)
+    {
+        var count = 0;
+        var latest = null;
+
+        for (const [key, value] of StaticCache.s_ZoneCache.entries()) 
+        {
+            if(key.includes(zone.toLowerCase()) || key.replace("/'/g", "").includes(zone.toLowerCase()))
+            {
+                count++;
+                latest = key;
+            }
+        }
+
+        // did not find unique match
+        if(count != 1)
+            return null;
+
+        if(latest != null)
+            return StaticCache.s_ZoneCache.get(latest);
+        
+        return null;
+    }
+
     static s_ClassCache = new Map();
+    static s_ZoneCache = new Map();
 }
 
 module.exports =
