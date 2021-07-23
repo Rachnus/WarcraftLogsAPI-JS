@@ -1,5 +1,4 @@
 var APIKey = require('../apikey');
-var Axios = require('axios');
 var Types = require('./types');
 var Cache = require('./cache');
 
@@ -131,18 +130,7 @@ function GetParses(parseQueries, forceUpdate = false)
 
         body += `}}`;
 
-        Axios(
-        {
-            url: APIKey.WARCRAFTLOGS_URL,
-            method: 'post',
-            headers:
-            {
-                'Authorization': `Bearer ${APIKey.WARCRAFTLOGS_ACCESS_TOKEN}`,
-            },
-            data: {
-            query: body
-            }
-        }).then((result) => 
+        APIKey.ApiRequest(body).then((result) => 
         {
             if(result.data == null)
             {
@@ -306,18 +294,7 @@ function GetAllstars(allstarQueries, forceUpdate = false)
 
         body += `}}`;
 
-        Axios(
-        {
-            url: APIKey.WARCRAFTLOGS_URL,
-            method: 'post',
-            headers:
-            {
-                'Authorization': `Bearer ${APIKey.WARCRAFTLOGS_ACCESS_TOKEN}`,
-            },
-            data: {
-            query: body
-            }
-        }).then((result) => 
+        APIKey.ApiRequest(body).then((result) => 
         {
             if(result.data == null)
             {
