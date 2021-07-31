@@ -19,11 +19,11 @@ function InitAPI(oath2)
 {
     var promise = new Promise((resolve, reject) =>
     {
-        var oathObj = oath2==null?APIKey.WARCRAFTLOGS_AUTH:oath2;
+        var oathObj = oath2==null?APIKey.GetToken():oath2;
         oathObj.credentials.getToken().then(async (user) =>
         {
-            APIKey.WARCRAFTLOGS_ACCESS_TOKEN = user['accessToken'];
-            if(APIKey.WARCRAFTLOGS_ACCESS_TOKEN != null)
+            APIKey.SetToken(user['accessToken']);
+            if(APIKey.GetToken() != null)
             {
                 console.log(`${Settings} Warcraftlogs authorization successful`);
                 await Classes.LoadClassData();

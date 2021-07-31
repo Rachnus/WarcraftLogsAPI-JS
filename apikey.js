@@ -33,5 +33,8 @@ module.exports =
     WARCRAFTLOGS_URL,
     WARCRAFTLOGS_ACCESS_TOKEN,
 
+    SetToken: (token) => WARCRAFTLOGS_ACCESS_TOKEN = token,
+    GetToken: () => WARCRAFTLOGS_ACCESS_TOKEN,
+
     ApiRequest,
 };
